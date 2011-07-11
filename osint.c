@@ -22,10 +22,10 @@ void osint_render(void){
 	for(v = 0; v < vector_draw_cnt; v++){
 		Uint8 c = vectors_draw[v].color * 256 / VECTREX_COLORS;
 		aalineRGBA(screen,
-				offx + vectors_draw[v].x0 / scl_factor,
 				offy + vectors_draw[v].y0 / scl_factor,
-				offx + vectors_draw[v].x1 / scl_factor,
+				screenx - (offx + vectors_draw[v].x0 / scl_factor),
 				offy + vectors_draw[v].y1 / scl_factor,
+				screenx - (offx + vectors_draw[v].x1 / scl_factor),
 				c, c, c, 0xff);
 	}
 	SDL_Flip(screen);
@@ -61,12 +61,13 @@ static void init(){
 void resize(int width, int height){
 	long sclx, scly;
 
-	screenx = width;
-	screeny = height;
-	screen = SDL_SetVideoMode(screenx, screeny, 0, SDL_SWSURFACE | SDL_RESIZABLE);
+	// screen = SDL_SetVideoMode(screenx, screeny, 0, SDL_SWSURFACE | SDL_RESIZABLE);
+	screen = SDL_SetVideoMode(0, 0, 0, 0);
+	screenx = screen->h;
+	screeny = screen->w;
 
-	sclx = ALG_MAX_X / screen->w;
-	scly = ALG_MAX_Y / screen->h;
+	sclx = ALG_MAX_X / screen->h;
+	scly = ALG_MAX_Y / screen->w;
 
 	scl_factor = sclx > scly ? sclx : scly;
 
@@ -84,64 +85,42 @@ static void readevents(){
 			case SDL_VIDEORESIZE:
 				resize(e.resize.w, e.resize.h);
 				break;
+			/* custom keydown code to handle iCade keyboard interface */
 			case SDL_KEYDOWN:
 				switch(e.key.keysym.sym){
-					case SDLK_ESCAPE:
-						exit(0);
-					case SDLK_a:
-						snd_regs[14] &= ~0x01;
-						break;
-					case SDLK_s:
-						snd_regs[14] &= ~0x02;
-						break;
-					case SDLK_d:
-						snd_regs[14] &= ~0x04;
-						break;
-					case SDLK_f:
-						snd_regs[14] &= ~0x08;
-						break;
-					case SDLK_LEFT:
-						alg_jch0 = 0x00;
-						break;
-					case SDLK_RIGHT:
-						alg_jch0 = 0xff;
-						break;
-					case SDLK_UP:
-						alg_jch1 = 0xff;
-						break;
-					case SDLK_DOWN:
-						alg_jch1 = 0x00;
-						break;
-					default:
-						break;
-				}
-				break;
-			case SDL_KEYUP:
-				switch(e.key.keysym.sym){
-					case SDLK_a:
-						snd_regs[14] |= 0x01;
-						break;
-					case SDLK_s:
-						snd_regs[14] |= 0x02;
-						break;
-					case SDLK_d:
-						snd_regs[14] |= 0x04;
-						break;
-					case SDLK_f:
-						snd_regs[14] |= 0x08;
-						break;
-					case SDLK_LEFT:
-						alg_jch0 = 0x80;
-						break;
-					case SDLK_RIGHT:
-						alg_jch0 = 0x80;
-						break;
-					case SDLK_UP:
-						alg_jch1 = 0x80;
-						break;
-					case SDLK_DOWN:
-						alg_jch1 = 0x80;
-						break;
+
+					/* button 1 - h/r */
+					case SDLK_h: snd_regs[14] &= ~0x01; break;
+					case SDLK_r: snd_regs[14] |= 0x01; break;
+					
+					/* button 2 - j/n */
+					case SDLK_j: snd_regs[14] &= ~0x02; break;
+					case SDLK_n: snd_regs[14] |= 0x02; break;
+
+					/* button 3 - k/p */
+					case SDLK_k: snd_regs[14] &= ~0x04; break;
+					case SDLK_p: snd_regs[14] |= 0x04; break;
+
+					/* button 4 - l/v */
+					case SDLK_l: snd_regs[14] &= ~0x08; break;
+					case SDLK_v: snd_regs[14] |= 0x08; break;
+
+					/* left - a/q */
+					case SDLK_a:	alg_jch0 = 0x00; break;
+					case SDLK_q:	alg_jch0 = 0x80; break;
+					
+					/* right - d/c */
+					case SDLK_d: alg_jch0 = 0xff; break;
+					case SDLK_c: alg_jch0 = 0x80; break;
+
+					/* up - w/e */
+					case SDLK_w: alg_jch1 = 0xff; break;
+					case SDLK_e: alg_jch1 = 0x80; break;
+
+					/* down - x/z */
+					case SDLK_x: alg_jch1 = 0x00; break;
+					case SDLK_z: alg_jch1 = 0x80; break;
+
 					default:
 						break;
 				}
@@ -173,7 +152,8 @@ void osint_emuloop(){
 int main(int argc, char *argv[]){
 	SDL_Init(SDL_INIT_VIDEO);
 
-	resize(330*3/2, 410*3/2);
+	// use native touchpad resolution
+	resize(1024, 768);
 
 	if(argc > 1)
 		cartfilename = argv[1];

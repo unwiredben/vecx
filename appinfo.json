@@ -1,0 +1,10 @@
+{
+	"title": "VecX",
+	"type": "pdk",
+	"main": "vecx",
+    "icon": "pdk_logo_64x64.png",
+	"id": "net.combee.app.vecx",
+	"version": "1.0.0",
+	"vendor": "Ben Combee",
+    "requiredMemory": 20
+}
